@@ -6,6 +6,7 @@ import cors from 'cors'
 
 import indexRouter from "./routes/index.js";
 import usersRouter from "./routes/users.js";
+import userRouter from "./routes/user.js";
 
 // Importa o client do Prisma para fazer a conexão ao BD
 import prisma from './database/client.js'
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
+app.use("/user", userRouter);
 
 /////////////////////////////////////////////////
 import carRouter from './routes/car.js'
