@@ -29,7 +29,6 @@ export default function CarList() {
     }
   })
 
-  // Desestruturando as variáveis de estado
   const {
     car,
     openDialog,
@@ -38,14 +37,12 @@ export default function CarList() {
     notification
   } = state
 
-  // Este useEffect() será executado apenas uma vez, durante o
-  // carregamento da página
   React.useEffect(() => {
-    loadData()    // Carrega dos dados do back-end
+    loadData()
   }, [])
 
   async function loadData(afterDeletion = false) {
-    // Exibe a tela de espera
+    
     setState({ ...state, showWaiting: true, openDialog: false })
     try {
       const result = await myfetch.get('car')
@@ -81,7 +78,6 @@ export default function CarList() {
           message: 'ERRO: ' + error.message
         }
       })
-      // Exibimos o erro no console
       console.error(error)
     }
   }
@@ -92,7 +88,7 @@ export default function CarList() {
       width: 90
     },
     {
-      field: 'marca',
+      field: 'brand',
       headerName: 'Marca',
       width: 90
     },
@@ -108,21 +104,15 @@ export default function CarList() {
       headerName: 'Cor',
       align: 'center',
       headerAlign: 'center',
-      width: 100,
-      // valueFormatter: params => {
-      //   if(params.value) return format(new Date(params.value), 'dd/MM/yyyy')
-      //   else return ''
-      // }
+      width: 100
     },
     {
       field: 'year_manufacture',
       headerName: 'Ano',
-      width: 60,
-      // Colocando dois campos na mesma célula
-      //valueGetter: params => params.row.municipality + '/' + params.row.state
+      width: 60
     },
     {
-      field: 'Imported',
+      field: 'imported',
       headerName: 'Importado',
       align: 'center',
       headerAlign: 'center',
@@ -138,22 +128,14 @@ export default function CarList() {
       headerName: 'Data de venda',
       align: 'center',
       headerAlign: 'center',
-      width: 130,
-      // valueFormatter: params => {
-      //   if(params.value) return format(new Date(params.value), 'dd/MM/yyyy')
-      //   else return ''
-      // }
+      width: 130
     },
     {
       field: 'selling_price',
       headerName: 'Preço de venda',
       align: 'center',
       headerAlign: 'center',
-      width: 130,
-      // valueFormatter: params => {
-      //   if(params.value) return format(new Date(params.value), 'dd/MM/yyyy')
-      //   else return ''
-      // }
+      width: 130
     },
     {
       field: 'edit',
@@ -190,13 +172,10 @@ export default function CarList() {
 
   async function handleDialogClose(answer) {
     if(answer) {
-      // Fecha a caixa de diálogo de confirmação e exibe a tela de espera
       setState({ ...state, openDialog: false, showWaiting: true })
       try {
-        // Faz a chamada ao back-end para excluir o cliente
         await myfetch.delete(`car/${deleteId}`)
         
-        // Se a exclusão tiver sido feita com sucesso, atualiza a listagem
         loadData(true)
       }
       catch(error) {
@@ -213,7 +192,6 @@ export default function CarList() {
         console.error(error)
       }
     }
-    // Fecha a caixa de diálogo de confirmação
     else setState({ ...state, openDialog: false })
   }
 
@@ -252,7 +230,7 @@ export default function CarList() {
       <Box sx={{
         display: 'flex',
         justifyContent: 'right',
-        mb: '25px'  // margin-bottom
+        mb: '25px'
       }}>
         <Link to="new">
           <Button 

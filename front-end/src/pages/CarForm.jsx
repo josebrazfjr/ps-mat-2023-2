@@ -2,6 +2,7 @@ import React from 'react'
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import Toolbar from '@mui/material/Toolbar'
 import Box from '@mui/material/Box'
@@ -15,6 +16,8 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import ptLocale from 'date-fns/locale/pt-BR'
 import { parseISO } from 'date-fns'
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 export default function CarForm() {
 
@@ -25,10 +28,9 @@ export default function CarForm() {
   const carDefaults = {
     brand: '',
     model: '',
-    //birth_date: '',
     color: '',
     year_manufacture: '',
-    Imported: '',
+    imported: false,
     plates: '',
     selling_date: '',
     selling_price: ''
@@ -71,32 +73,23 @@ export default function CarForm() {
     '_': '[\s0-9]'     // Um espaço em branco ou um dígito
   }
 
-  // useEffect com vetor de dependências vazio. Será executado
-  // uma vez, quando o componente for carregado
   React.useEffect(() => {
-    // Verifica se existe o parâmetro id na rota.
-    // Caso exista, chama a função fetchData() para carregar
-    // os dados indicados pelo parâmetro para edição
     if(params.id) fetchData()
   }, [])
 
   async function fetchData() {
-    // Exibe o backdrop para indicar que uma operação está ocorrendo
-    // em segundo plano
     setState({ ...state, showWaiting: true })
     try {
       const result = await myfetch.get(`car/${params.id}`)
       
-      // É necesário converter a data de nascimento de string para data
-      // antes de carregá-la no componente DatePicker
-      result.birth_date = parseISO(result.birth_date)
+      result.year_manufacture = parseISO(result.year_manufacture);
 
       setState({ ...state, showWaiting: false, car: result })
       
     } 
     catch(error) {
       setState({ ...state, 
-        showWaiting: false, // Esconde o backdrop
+        showWaiting: false,
         notification: {
           show: true,
           severity: 'error',
@@ -104,6 +97,22 @@ export default function CarForm() {
         } 
       }) 
     }
+  }
+
+  function convertToInteger(value) {
+    const intValue = parseInt(value, 10); 
+    return isNaN(intValue) ? null : intValue; 
+  }
+
+  function handleYearManufactureChange(event) {
+    const { name, value } = event.target;
+    const intValue = convertToInteger(value); 
+    const newCar = { ...car, [name]: intValue };
+    setState({
+      ...state,
+      car: newCar,
+      isFormModified: true,
+    });
   }
 
   function handleFieldChange(event) {
@@ -114,26 +123,23 @@ export default function CarForm() {
     setState({ 
       ...state, 
       car: newCar,
-      isFormModified: true      // O formulário foi alterado
+      isFormModified: true     
     })
   }
 
   async function handleFormSubmit(event) {
-    setState({ ...state, showWaiting: true }) // Exibe o backdrop
-    event.preventDefault(false)   // Evita o recarregamento da página
+    setState({ ...state, showWaiting: true }) 
+    event.preventDefault(false)  
     try {
 
       let result
 
-      // Se existir o campo id no json de dados, chama o método PUT
-      // para alteração
       if(car.id) result = await myfetch.put(`car/${car.id}`, car)
 
-      // Senão, chama o método POST para criar um novo registro
       else result = await myfetch.post('car', car)
       
       setState({ ...state, 
-        showWaiting: false, // Esconde o backdrop
+        showWaiting: false, 
         notification: {
           show: true,
           severity: 'success',
@@ -143,7 +149,7 @@ export default function CarForm() {
     }
     catch(error) {
       setState({ ...state, 
-        showWaiting: false, // Esconde o backdrop
+        showWaiting: false, 
         notification: {
           show: true,
           severity: 'error',
@@ -156,34 +162,31 @@ export default function CarForm() {
   function handleNotificationClose() {
     const status = notification.severity
     
-    // Fecha a barra de notificação
     setState({...state, notification: { 
       show: false,
       severity: status,
       message: ''
     }})
 
-    // Volta para a página de listagem
     if(status === 'success') navigate('..', { relative: 'path' })
   }
 
+  function isDateInvalid(date) {
+    if (!date) return false; 
+    const currentDate = new Date();
+    return date > currentDate; 
+  }
+
   function handleBackButtonClose(event) {
-    // Se o formulário tiver sido modificado, abre a caixa de diálogo
-    // para perguntar se quer mesmo voltar, perdendo as alterações
     if(isFormModified) setState({ ...state, openDialog: true })
 
-    // Senão, volta à página de listagem
     else navigate('..', { relative: 'path' })
   }
 
   function handleDialogClose(answer) {
 
-    // Fechamos a caixa de diálogo
     setState({ ...state, openDialog: false })
 
-    // Se o usuário tiver respondido quer quer voltar à página
-    // de listagem mesmo com alterações pendentes, faremos a
-    // vontade dele
     if(answer) navigate('..', { relative: 'path' })
   }
 
@@ -227,24 +230,17 @@ export default function CarForm() {
             autoFocus
           />
 
-          {/* <InputMask
-            mask="999.999.999-99"
-            maskChar=" "
-            value={car.ident_document}
+          <TextField 
+            id="model"
+            name="model" 
+            label="Modelo" 
+            variant="filled"
+            required
+            fullWidth
+            placeholder="Preto"
+            value={car.model}
             onChange={handleFieldChange}
-          >
-            {
-              () =>  */}
-              <TextField 
-                id="model"
-                name="model" 
-                label="Modelo" 
-                variant="filled"
-                required
-                fullWidth
-              />
-            {/*}
-          </InputMask>*/}
+          />
 
           <TextField 
             id="color"
@@ -254,7 +250,7 @@ export default function CarForm() {
             required
             fullWidth
             placeholder="Preto"
-            value={car.street_name}
+            value={car.color}
             onChange={handleFieldChange}
           />
 
@@ -265,20 +261,18 @@ export default function CarForm() {
             variant="filled"
             required
             fullWidth
-            value={car.house_number}
-            onChange={handleFieldChange}
+            value={car.year_manufacture}
+            onChange={handleYearManufactureChange}
           />
 
           <TextField 
-            id="Imported"
-            name="Imported" 
-            label="Importado" 
-            variant="filled"
+            id="imported"
+            name="imported" 
+            label="Importado"
             fullWidth
-            placeholder=""
-            value={car.complements}
-            onChange={handleFieldChange}
-          />
+            
+          >
+          </TextField>
 
           <TextField 
             id="plates"
@@ -287,7 +281,7 @@ export default function CarForm() {
             variant="filled"
             required
             fullWidth
-            value={car.neighborhood}
+            value={car.plates}
             onChange={handleFieldChange}
           />
 
@@ -299,6 +293,22 @@ export default function CarForm() {
                 handleFieldChange({ target: { name: 'selling_date', value } }) 
               }
               slotProps={{ textField: { variant: 'filled', fullWidth: true } }}
+              renderImput={(params) => (
+                <TextField {...params} error={isDateInvalid()} />
+              )}
+              renderDay={(date, _value, DayProps, DayState) => {
+                const isDayInvalid = isDateInvalid(date); 
+                return (
+                  <div
+                    {...DayProps}
+                    className={clsx(DayProps.className, {
+                      [classes.invalidDay]: isDayInvalid, 
+                    })}
+                  >
+                    {date.getDate()}
+                  </div>
+                );
+              }}
             />
           </LocalizationProvider>
           
@@ -314,57 +324,6 @@ export default function CarForm() {
           />
 
 
-
-          {/* <TextField
-            id="state"
-            name="state"
-            select
-            label="UF"
-            variant="filled"
-            fullWidth
-            required
-            value={car.state}
-            onChange={handleFieldChange}
-          >
-            {states.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <InputMask
-            mask="(99) _9999-9999"
-            formatChars={maskFormatChars}
-            maskChar="_"
-            value={car.phone}
-            onChange={handleFieldChange}
-          >
-            {
-              () => <TextField 
-                id="phone"
-                name="phone" 
-                label="Celular / Telefone de contato" 
-                variant="filled"
-                required
-                fullWidth
-                value={car.phone}
-                onChange={handleFieldChange}
-              />
-            }
-          </InputMask>
-
-          <TextField 
-            id="email"
-            name="email" 
-            label="E-mail" 
-            variant="filled"
-            required
-            fullWidth
-            value={car.email}
-            onChange={handleFieldChange}
-          />
-           */}
         </Box>
 
         <Box sx={{ fontFamily: 'monospace' }}>
@@ -390,7 +349,5 @@ export default function CarForm() {
       
       </form>
     </>
-
-    
   )
 }
