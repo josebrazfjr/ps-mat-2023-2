@@ -182,7 +182,7 @@ export default function CustomersForm() {
     // Fechamos a caixa de diálogo
     setState({ ...state, openDialog: false })
 
-    // Se o usuário tiver respondido quer quer voltar à página
+    // Se o usuário tiver respondido se quer voltar à página
     // de listagem mesmo com alterações pendentes, faremos a
     // vontade dele
     if(answer) navigate('..', { relative: 'path' })

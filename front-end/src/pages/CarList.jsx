@@ -15,10 +15,10 @@ import myfetch from '../utils/myfetch'
 import Notification from '../components/ui/Notification'
 import Waiting from '../components/ui/Waiting'
 
-export default function CarList() {
+export default function CarsList() {
 
   const [state, setState] = React.useState({
-    car: {},
+    cars: {},
     openDialog: false,
     deleteId: null,
     showWaiting: false,
@@ -29,20 +29,23 @@ export default function CarList() {
     }
   })
 
+  // Desestruturando as variáveis de estado
   const {
-    car,
+    cars,
     openDialog,
     deleteId,
     showWaiting,
     notification
   } = state
 
+  // Este useEffect() será executado apenas uma vez, durante o
+  // carregamento da página
   React.useEffect(() => {
-    loadData()
+    loadData()    // Carrega dos dados do back-end
   }, [])
 
   async function loadData(afterDeletion = false) {
-    
+    // Exibe a tela de espera
     setState({ ...state, showWaiting: true, openDialog: false })
     try {
       const result = await myfetch.get('car')
@@ -61,7 +64,7 @@ export default function CarList() {
 
       setState({
         ...state, 
-        car: result, 
+        cars: result, 
         showWaiting: false,
         openDialog: false,
         notification: notif
@@ -78,70 +81,81 @@ export default function CarList() {
           message: 'ERRO: ' + error.message
         }
       })
+      // Exibimos o erro no console
       console.error(error)
     }
   }
 
   const columns = [
-    { field: 'id',
-     headerName: 'ID',
-      width: 90
-    },
+    { field: 'id', headerName: 'ID', width: 90 },
     {
       field: 'brand',
       headerName: 'Marca',
-      width: 90
+      width: 150
     },
     {
       field: 'model',
       headerName: 'Modelo',
-      align: 'center',
-      headerAlign: 'center',
+      align: 'left',
+      headerAlign: 'left',
       width: 150
     },
     {
       field: 'color',
       headerName: 'Cor',
-      align: 'center',
-      headerAlign: 'center',
-      width: 100
+      align: 'left',
+      headerAlign: 'left',
+      width: 150
     },
     {
       field: 'year_manufacture',
-      headerName: 'Ano',
-      width: 60
+      headerName: 'Ano fabricação',
+      width: 200
     },
     {
       field: 'imported',
-      headerName: 'Importado',
-      align: 'center',
-      headerAlign: 'center',
-      width: 90
+      headerName: 'Ano fabricação',
+      width: 200,
+      valueFormatter: params => {
+        if(params.value === true)  return 'Sim'
+        return 'Não'
+      }
     },
     {
       field: 'plates',
       headerName: 'Placa',
-      width: 100
-    },
-    {
-      field: 'selling_date',
-      headerName: 'Data de venda',
-      align: 'center',
-      headerAlign: 'center',
-      width: 130
+      width: 200
     },
     {
       field: 'selling_price',
-      headerName: 'Preço de venda',
-      align: 'center',
-      headerAlign: 'center',
-      width: 130
+      headerName: 'Valor venda',
+      headerAlign: 'right',
+      align: 'right',
+      width: 200,
+      valueFormatter: params => {
+        if(params.value) return Number(params.value).toLocaleString(
+          'pt-BR',  // Português do Brasil
+          { style: 'currency', currency: 'BRL' }   // Moeda: real brasileiro
+        )
+        else return ''
+      }
+    },
+    {
+      field: 'selling_date',
+      headerName: 'Data venda',
+      align: 'left',
+      headerAlign: 'left',
+      width: 100,
+      valueFormatter: params => {
+        if(params.value) return format(new Date(params.value), 'dd/MM/yyyy')
+        else return ''
+      }
     },
     {
       field: 'edit',
       headerName: 'Editar',
-      headerAlign: 'center',
-      align: 'center',
+      headerAlign: 'left',
+      align: 'left',
       width: 90,
       renderCell: params =>
         <Link to={'./' + params.id}>
@@ -153,8 +167,8 @@ export default function CarList() {
     {
       field: 'delete',
       headerName: 'Excluir',
-      headerAlign: 'center',
-      align: 'center',
+      headerAlign: 'left',
+      align: 'left',
       width: 90,
       renderCell: params =>
         <IconButton 
@@ -171,11 +185,15 @@ export default function CarList() {
   }
 
   async function handleDialogClose(answer) {
+    // Fecha a caixa de diálogo de confirmação
+    setState({ ...state, openDialog: false })
+
     if(answer) {
-      setState({ ...state, openDialog: false, showWaiting: true })
       try {
+        // Faz a chamada ao back-end para excluir o cliente
         await myfetch.delete(`car/${deleteId}`)
         
+        // Se a exclusão tiver sido feita com sucesso, atualiza a listagem
         loadData(true)
       }
       catch(error) {
@@ -192,7 +210,6 @@ export default function CarList() {
         console.error(error)
       }
     }
-    else setState({ ...state, openDialog: false })
   }
 
   function handleNotificationClose() {
@@ -230,7 +247,7 @@ export default function CarList() {
       <Box sx={{
         display: 'flex',
         justifyContent: 'right',
-        mb: '25px'
+        mb: '25px'  // margin-bottom
       }}>
         <Link to="new">
           <Button 
@@ -246,7 +263,7 @@ export default function CarList() {
 
       <Paper elevation={4} sx={{ height: 400, width: '100%' }}>
         <DataGrid
-          rows={car}
+          rows={cars}
           columns={columns}
           initialState={{
             pagination: {
