@@ -34,7 +34,8 @@ export default function CarForm() {
   }
 
   const [state, setState] = React.useState({
-    car: carDefaults,    
+    car: carDefaults,
+    customers: [],    
     showWaiting: false,
     notification: {
       show: false,
@@ -45,16 +46,9 @@ export default function CarForm() {
     isFormModified: false
   })
   
-  const maskFormChars = {
-    '9': '[0-9]',
-    'A': '[A-Za-z]',
-    '*': '[A-Za-z0-9]',
-    '@': '[A-Ja-j0-9]', // Aceita letras de A a J (maiúsculas ou minúsculas) e dígitos
-    '_': '[\s0-9]'
-  }
-
   const {
     car,
+    customers,
     showWaiting,
     notification,
     openDialog,
@@ -72,17 +66,29 @@ export default function CarForm() {
     // Verifica se existe o parâmetro id na rota.
     // Caso exista, chama a função fetchData() para carregar
     // os dados indicados pelo parâmetro para edição
-    if(params.id) fetchData()
+    fetchData(params.id)
   }, [])
 
-  async function fetchData() {
+  async function fetchData(isUpdating) {
     // Exibe o backdrop para indicar que uma operação está ocorrendo
     // em segundo plano
     setState({ ...state, showWaiting: true })
     try {
-      const result = await myfetch.get(`car/${params.id}`)
-      result.selling_date = parseISO(result.selling_date)
+
+      let car = carDefaults
+
+      // Se estivermos no modo de atualização, devemos carregar o 
+      // registro indicado no parâmetro da rota
+      if(isUpdating) {
+        car = await myfetch.get(`car/${params.id}`)
+        car.selling_date = parseISO(result.selling_date)
+      }
+
+      //Busca a listagem de clientes para preencher o componente de escolha
+      let customers = await myfetch.get('customer')
+
       setState({ ...state, showWaiting: false, car: result })
+    
     } 
     catch(error) {
       setState({ ...state, 
@@ -317,6 +323,25 @@ export default function CarForm() {
             />
           </LocalizationProvider>
           
+          <TextField
+            id="customer_id"
+            name="customer_id" 
+            label="Cliente adquirente"
+            select
+            defaultValue=""
+            fullWidth
+            variant="filled"
+            helperText="Selecione o cliente"
+            value={car.customer_id}
+            onChange={handleFieldChange}
+          >
+          {customers.map(customer => (
+            <MenuItem key={customer.id} value={customer.id}>
+              {customer.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
         </Box>
 
         <Box sx={{ fontFamily: 'monospace' }}>
