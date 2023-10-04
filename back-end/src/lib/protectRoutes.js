@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken'
 // de autenticação devem ser colocadas no vetor
 // abaixo
 const bypassRoutes = [
-  { uri: '/user/login', method: 'POST' }
+  { uri: '/user/login', method: 'POST' },
+  { uri: '/user', method: 'POST' }
 ]
 
 export default function (req, res, next) {
@@ -19,8 +20,10 @@ export default function (req, res, next) {
     }
   }
 
+  //console.log(COOKIE: req.cookies)
+
   // Verifica se o token foi enviado por meio do cookie
-  const token = req.cookies['_DATA_']
+  const token = req.cookies['_data_']
 
   // Se não houver token ~> HTTP 403: Forbidden
   if(! token) return res.status(403).end()
