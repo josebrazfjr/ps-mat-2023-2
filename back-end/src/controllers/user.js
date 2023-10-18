@@ -133,6 +133,10 @@ controller.login = async function(req, res) {
 
     if(passwordMatches) {   // A senha confere
 
+      // Apagamos o campo "password" do objeto user
+      // antes de incluí-lo no token
+      if(user.password) delete user.password
+      
       // Formamos um token de autenticação para ser enviado ao front-end
       const token = jwt.sign(
         user,                       // Os dados do usuário
@@ -146,8 +150,10 @@ controller.login = async function(req, res) {
         secure: true,
         sameSite: 'None',
         path: '/',
-        maxAge: 24 * 60 * 60  // 24h
+        maxAge: 24 * 60 * 60 * 1000  // 24h
       })
+
+      // console.log(token)
 
       // Retorna HTTP 204: No content
       res.status(204).end()
@@ -172,6 +178,13 @@ controller.logout = function(req, res) {
   res.clearCookie('_data_')
   // HTTP 204: No content
   res.status(204).end()
+}
+
+// Retorna informações sobre o usuário logado, ou 403
+// caso não haja usuário logado
+controller.loggedin = function(req, res) {
+  if(req.loggedInUser) res.send(req.loggedInUser)
+  else res.status(403).end()
 }
 
 export default controller

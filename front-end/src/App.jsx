@@ -11,12 +11,16 @@ import Box from '@mui/material/Box'
 import FooterBar from './components/ui/FooterBar'
 import CssBaseline from '@mui/material/CssBaseline'
 
+import Login from './pages/Login'
+import Logout from './components/ui/Logout'
+
 import Homepage from './pages/Homepage'
+
 import CustomersList from './pages/CustomersList'
 import CustomersForm from './pages/CustomersForm'
 
-import CarsForm from './pages/CarForm'
-import CarsList from './pages/CarList'
+import CarsForm from './pages/CarsForm'
+import CarsList from './pages/CarsList'
 
 function App() {
   return (
@@ -36,6 +40,8 @@ function App() {
 
               <Routes>
                 <Route path="/" element={ <Homepage /> } />
+                <Route path="/login" element={ <Login /> } />
+                <Route path="/logout" element={ <Logout /> } />
                 <Route path="/customers" element={ <CustomersList /> } />
                 <Route path="/customers/new" element={ <CustomersForm /> } />
                 <Route path="/customers/:id" element={ <CustomersForm /> } />
