@@ -136,7 +136,7 @@ controller.login = async function(req, res) {
       // Apagamos o campo "password" do objeto user
       // antes de incluí-lo no token
       if(user.password) delete user.password
-      
+
       // Formamos um token de autenticação para ser enviado ao front-end
       const token = jwt.sign(
         user,                       // Os dados do usuário
@@ -176,7 +176,7 @@ controller.login = async function(req, res) {
 controller.logout = function(req, res) {
   // Apaga o cookie que contém o token
   // res.clearCookie('_data_')
-  // HTTP 204: No content
+
   res.cookie('_data_', 'NO USER', {
     httpOnly: true,       // HTTP only: o cookie ficará inacessível via JS
     secure: true,
@@ -184,6 +184,9 @@ controller.logout = function(req, res) {
     path: '/',
     maxAge: 24 * 60 * 60 * 1000  // 24h
   })
+
+  // HTTP 204: No content
+  res.status(204).end()
 }
 
 // Retorna informações sobre o usuário logado, ou 403
