@@ -378,7 +378,7 @@ export default function CarsForm() {
 
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptLocale}>
             <DatePicker
-              label="Data de venda (Obs: Deixar em branco, não consegui resolver)"
+              label="Data de venda"
               value={car.selling_date}
               onChange={ value => 
                 handleFieldChange({ target: { name: 'selling_date', value } }) 
