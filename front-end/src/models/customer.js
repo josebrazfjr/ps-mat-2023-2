@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { cpf } from 'cpf-cnpj-validator'
-import { min } from 'date-fns'
 
 // O cliente deve ser maior de 18 anos
 // Por isso, para validar, calculamos a data máxima em que
@@ -12,7 +11,7 @@ maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 18)  // Data há 18 anos a
 const minBirthDate = new Date()
 minBirthDate.setFullYear(maxBirthDate.getFullYear() - 120)
 
-const CustomerModel = z.object({
+const Customer = z.object({
   name: 
     z.string()
     .min(5, { message: 'O nome deve ter, no mínimo, 5 caracteres' })
@@ -20,14 +19,16 @@ const CustomerModel = z.object({
   
   ident_document: 
     z.string()
+    .trim()
     .length(14, { message: 'O CPF está incompleto'})
-    .refine(val => cpfisValid(val), { message: 'CPF inválido'}),
+    .refine(val => cpf.isValid(val), { message: 'CPF inválido' }),
   
   birth_date: 
-    z.date()
+    // coerce força a conversão para o tipo Date, se o dado recebido for string
+    z.coerce.date()
     .min(minBirthDate, { message: 'Data de nascimento está muito no passado'})
     .max(maxBirthDate, { message: 'O cliente deve ser maior de 18 anos' })
-    .optional(),
+    .nullable(),
   
   street_name: 
     z.string()
@@ -40,7 +41,7 @@ const CustomerModel = z.object({
   complements: 
     z.string()
     .max(20, { message: 'O complemento pode conter, no máximo, 20 caracteres' })
-    .optional(),
+    .nullable(),
   
   neighborhood: 
     z.string()
@@ -56,28 +57,14 @@ const CustomerModel = z.object({
   
   phone: 
     z.string()
-    .length(15, { message: 'Número incompleto'}),
+    .transform(v => v.replace('_', '')) // Retira os sublinhados
+    // Depois de um transform(), não podemos usar length(). Por isso, temos que
+    // usar refine() passando uma função personalizada para validar o tamanho do campo
+    .refine(v => v.length == 15, { message: 'O número do telefone/celular está incompleto' }),
   
   email: 
     z.string()
     .email({ message: 'E-mail inválido' })
 })
-
-
-const Customer = {}
-
-Customer.parse = function(fields) {
-
-  // Pré-processamento de campos, se necessário
-  
-  // Tira os espaços em branco do final do campo ident_document
-  fields.ident_document = fields?.ident_document.trim()
-
-  // Tira os sublinhados que porventura existam do campo phone
-    fields.phone = fields?.phone.replace('_', '')
-
-  return CustomerModel.parse(fields)
-
-}
 
 export default Customer
