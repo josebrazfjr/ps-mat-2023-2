@@ -17,8 +17,10 @@ import ptLocale from 'date-fns/locale/pt-BR'
 import { parseISO } from 'date-fns'
 import { FormControlLabel, Switch } from '@mui/material'
 import InputAdornment from '@mui/material/InputAdornment'
+import Car from '../models/car'
+import { ZodError } from 'zod'
 
-export default function CarForm() {
+export default function CarsForm() {
 
   const navigate = useNavigate()
   const params = useParams()
@@ -30,6 +32,7 @@ export default function CarForm() {
     year_manufacture: '',
     imported: false,
     plates: '',
+    // selling_date: '',
     selling_price: ''
   }
 
@@ -43,7 +46,8 @@ export default function CarForm() {
       message: ''
     },
     openDialog: false,
-    isFormModified: false
+    isFormModified: false,
+    validationErrors: {}
   })
   
   const {
@@ -52,8 +56,17 @@ export default function CarForm() {
     showWaiting,
     notification,
     openDialog,
-    isFormModified
+    isFormModified,
+    validationErrors
   } = state
+
+  const maskFormChars = {
+    '9': '[0-9]',
+    'A': '[A-Za-z]',
+    '*': '[A-Za-z0-9]',
+    '@': '[A-Ja-j0-9]', // Aceita letras de A a J (maiúsculas ou minúsculas) e dígitos
+    '_': '[\s0-9]'
+  }
   
   const years = []
 
@@ -76,40 +89,47 @@ export default function CarForm() {
     try {
 
       let car = carDefaults
-
-      // Se estivermos no modo de atualização, devemos carregar o 
-      // registro indicado no parâmetro da rota
       if(isUpdating) {
-        car = await myfetch.get(`car/${params.id}`)
-        car.selling_date = parseISO(result.selling_date)
+        const result = await myfetch.get(`car/${params.id}`)
+        result.selling_date = parseISO(result.selling_date)
+        
+        setState({ ...state, showWaiting: false, car: result })
       }
-
+    
       //Busca a listagem de clientes para preencher o componente de escolha
       let customers = await myfetch.get('customer')
 
-      setState({ ...state, showWaiting: false, car: result })
+      // Cria um cliente "fake" que permite não selecionar nenhum
+      // cliente
+      customers.unshift({id: null, name: '(Nenhum cliente)'})
+
+      setState({ ...state, showWaiting: false, car, customers })
     
-    } 
+    }
     catch(error) {
-      setState({ ...state, 
-        showWaiting: false, // Esconde o backdrop
+      setState({ ...state,
+        showWaiting: false,
         notification: {
           show: true,
           severity: 'error',
           message: 'ERRO: ' + error.message
-        } 
-      }) 
+        }
+      })
     }
   }
 
   function handleFieldChange(event) {
+    console.log(event)
     const newCar = { ...car }
-    
-    if (event.target.name === 'imported'){
-      newCar[event.target.name] = event.target.checked
-    } else {
-      newCar[event.target.name] = event.target.value
-    }
+    newCar[event.target.name] = event.target.value
+  
+  if (event.target.name === 'imported') {
+    newCar[event.target.name] = event.target.checked;
+  } else if (event.target.name === 'selling_price') {
+    newCar[event.target.name] = event.target.value ? parseFloat(event.target.value) : null;
+  } else {
+    newCar[event.target.name] = event.target.value;
+  }
 
     setState({ 
       ...state, 
@@ -123,6 +143,13 @@ export default function CarForm() {
     event.preventDefault(false)   // Evita o recarregamento da página
   
     try {
+
+      console.log('Validar objeto carro:', car)
+      // Chama a validação da biblioteca Zod
+      Car.parse(car)
+
+      car.selling_price = parseFloat(car.selling_price)
+
       let result 
       // se id então put para atualizar
       if(car.id) result = await myfetch.put(`car/${car.id}`, car)
@@ -133,19 +160,44 @@ export default function CarForm() {
         notification: {
           show: true,
           severity: 'success',
-          message: 'Dados salvos com sucesso.'
+          message: 'Dados salvos com sucesso.',
+          validationErrors: {}
         }  
       })  
     }
     catch(error) {
-      setState({ ...state, 
-        showWaiting: false, // Esconde o backdrop
+
+      if(error instanceof ZodError) {
+        console.error(error)
+
+        // Preenchendo os estados validationError
+        // para exibir os erros para o usuário
+        let valErrors = {}
+
+        for(let e of error.issues) valErrors[e.path[0]] = e.message
+
+        setState({ 
+          ...state,
+          validationErrors: valErrors, 
+          showWaiting: false, // Esconde o backdrop
+          notification: {
+            show: true,
+            severity: 'error',
+            message: 'ERRO: há campos inválidos no formulário.'
+          } 
+        })  
+      }
+
+      else setState({
+        ...state,
+        showWaiting: false,
         notification: {
           show: true,
           severity: 'error',
-          message: 'ERRO: ' + error.message
-        } 
-      })  
+          message: 'ERRO: ' + error.message,
+          validationErrors: {}
+        }  
+      })
     }
   }
 
@@ -221,6 +273,8 @@ export default function CarForm() {
             value={car.brand}
             onChange={handleFieldChange}
             autoFocus
+            error={validationErrors?.brand}
+            helperText={validationErrors?.brand}
           />
 
           <TextField 
@@ -230,9 +284,10 @@ export default function CarForm() {
             variant="filled"
             required
             fullWidth
-            placeholder="Ex.: Rua Principal"
             value={car.model}
             onChange={handleFieldChange}
+            error={validationErrors?.model}
+            helperText={validationErrors?.model}
           />
 
           <TextField 
@@ -244,6 +299,8 @@ export default function CarForm() {
             fullWidth
             value={car.color}
             onChange={handleFieldChange}
+            error={validationErrors?.color}
+            helperText={validationErrors?.color}
           />
 
           <TextField
@@ -254,9 +311,10 @@ export default function CarForm() {
             defaultValue=""
             fullWidth
             variant="filled"
-            helperText="Selecione o ano"
             value={car.year_manufacture}
             onChange={handleFieldChange}
+            error={validationErrors?.year_manufacture}
+            helperText={validationErrors?.year_manufacture}
           >
           {years.map((option) => (
             <MenuItem key={option} value={option}>
@@ -275,6 +333,8 @@ export default function CarForm() {
           name="imported" 
           labelPlacement="start" 
           checked={car.imported}
+          error={validationErrors?.imported}
+          helperText={validationErrors?.imported}
         />
 
         <InputMask
@@ -293,7 +353,9 @@ export default function CarForm() {
               variant="filled"
               required
               fullWidth
-              inputProps={{style: {textTransform: 'uppercase'}}}
+              inputProps={{style: {textTransform: 'uppercase'}}}          
+              error={validationErrors?.plates}
+              helperText={validationErrors?.plates}
             />
           }
           </InputMask>
@@ -310,16 +372,23 @@ export default function CarForm() {
             }}         
             value={car.selling_price}
             onChange={handleFieldChange}
+            error={validationErrors?.selling_price}
+            helperText={validationErrors?.selling_price}
           />
 
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptLocale}>
             <DatePicker
-              label="Data de venda"
+              label="Data de venda (Obs: Deixar em branco, não consegui resolver)"
               value={car.selling_date}
               onChange={ value => 
                 handleFieldChange({ target: { name: 'selling_date', value } }) 
               }
-              slotProps={{ textField: { variant: 'filled', fullWidth: true } }}
+              slotProps={{ textField: {
+                variant: 'filled',
+                fullWidth: true,
+                error: validationErrors?.selling_date,
+                helperText: validationErrors?.selling_date
+              } }}
             />
           </LocalizationProvider>
           
@@ -331,9 +400,10 @@ export default function CarForm() {
             defaultValue=""
             fullWidth
             variant="filled"
-            helperText="Selecione o cliente"
             value={car.customer_id}
             onChange={handleFieldChange}
+            error={validationErrors?.customer_id}
+            helperText={validationErrors?.customer_id}
           >
           {customers.map(customer => (
             <MenuItem key={customer.id} value={customer.id}>
